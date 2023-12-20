@@ -1,4 +1,4 @@
-## Fullstack Open | Exercise 0.5
+## Fullstack Open | Exercise 0.6
 
 ```mermaid
 sequenceDiagram
