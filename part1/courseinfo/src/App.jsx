@@ -1,4 +1,5 @@
 const Header = (props) => {
+  console.log(props)
   return (
     <>
       <h1>{props.title}</h1>
@@ -12,7 +13,7 @@ const Content = (props) => {
   return (
     <>
       {parts.map((part) => (
-        <Part name={part.partName} numberOfExercises={part.numberOfExercises} />
+        <Part name={part.name} numberOfExercises={part.exercises} />
       ))}
     </>
   )
@@ -31,7 +32,7 @@ const Total = (props) => {
   const { parts } = props;
 
   // Calculate the total number of exercises
-  const totalExercises = parts.reduce((total, part) => total + part.numberOfExercises, 0);
+  const totalExercises = parts.reduce((total, part) => total + part.exercises, 0);
 
   return(
     <>
@@ -42,28 +43,32 @@ const Total = (props) => {
 
 const App = () => {
   // const-definitions
-  const course = 'Half Stack application development'
-  const part1 = 'Fundamentals of React'
-  const exercises1 = 10
-  const part2 = 'Using props to pass data'
-  const exercises2 = 7
-  const part3 = 'State of a component'
-  const exercises3 = 14
-
-  const partsList = [
-      { partName: part1, numberOfExercises: exercises1},
-      { partName: part2, numberOfExercises: exercises2},
-      { partName: part3, numberOfExercises: exercises3},
-  ] 
+  const course = {
+    name: 'Half Stack application development',
+    parts: [
+      {
+        name: 'Fundamentals of React',
+        exercises: 10
+      },
+      {
+        name: 'Using props to pass data',
+        exercises: 7
+      },
+      {
+        name: 'State of a component',
+        exercises: 14
+      }
+    ]
+  }
 
   // The app itself
   return (
     <div>
-      <Header title={course} />
+      <Header title={course.name} />
 
-      <Content parts={partsList} />
+      <Content parts={course.parts} />
 
-      <Total parts={partsList}/>
+      <Total parts={course.parts}/>
     </div>
   )
 }
