@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import Contacts from './components/Contacts'
 import { Header, SubHeader } from './components/Headers'
 import Filter from './components/Filter'
 import DoubleInputForm from './components/DoubleInputForm'
+import contactService from './services/contacts'
  
 const App = () => {
   const appName = 'Phonebook'
@@ -17,52 +17,100 @@ const App = () => {
   const handleNameChange = (event) => setNewName(event.target.value)
   const handlePhoneNumberChange = (event) => setNewPhoneNumber(event.target.value)
   const handleFilterChange = (event) => setFilter(event.target.value)
+
+  const resetInputFields = () => {
+    setNewName('')  // Reset name value in the input field
+    setNewPhoneNumber('')  // Reset phone number value in the input field
+  }
   
   const addNewContact = (event) => {
     event.preventDefault()
-    console.log("🚀 ~ file: App.jsx:29 ~ handleNewName ~ event:", event.target.value)
+    // console.log("🚀 ~ file: App.jsx:29 ~ handleNewName ~ event:", event.target.value)
+
+    // Trim the name and number to get rid of leading and trailing spaces
+    const name = newName.trim()
+    const number = newPhoneNumber.trim()
 
     // Throw alert if name or phonenumber input is empty and stop further execution
-    if (!newName.trim() || !newPhoneNumber.trim()) {
+    if (!name || !number) {
       alert('Please fill in a name and phonenumber')
       return
     }
 
-    // Check if a contact with the same name already exists (ignoring leading and trailing spaces)
-    const nameExists = contacts.some(contact => contact.name.trim().toLowerCase() === newName.trim().toLowerCase())
+    // Check if a contact with the same name already exists
+    const nameExists = contacts.some(contact => contact.name.toLowerCase() === name.toLowerCase())
 
     // Check if a contact with the same phonenumber already exists (ignoring leading and trailing spaces)
-    const phoneNumberExists = contacts.some(contact => contact.phoneNumber.trim() === newPhoneNumber.trim())
+    const phoneNumberExists = contacts.some(contact => contact.number === number)
 
-    // Throw alert if name already exists and stop further execution
-    if (nameExists || phoneNumberExists) {
-      alert(`A contact with this name ("${newName.trim()}") or phonenumber ("${newPhoneNumber.trim()}") already exists \n Please check your existing contacts`)
+    // Throw alert if phonenumber already exists and stop further execution
+    if (phoneNumberExists) {
+      alert(`A contact with this phonenumber ("${number}") already exists \n Please check your existing contacts`)
       return
     }
 
-    // Create a new contact object with the trimmed name, the phone number, and a unique id
-    const contactObject = {
-      name: newName.trim(),
-      phoneNumber: newPhoneNumber.trim(),
-      id: contacts.length + 1,
+    // Throw alert if name already exists and if the number is different and update the number if the user wants that
+    // Stop further execution if updated
+    if (nameExists) {
+      if (window.confirm(`Contact ${name} already exists \nDo you want to replace the old number with the new one?`)){
+        // Get the contact
+        const contact = contacts.find(c => c.name === name)
+        const changedContact = { ...contact, number: number}
+
+        contactService
+          .update(changedContact)
+          .then(newContact => {
+            // console.log(newContact)
+            setContacts(contacts.map(c => c.id !== newContact.id ? c : newContact))
+          })
+        
+        resetInputFields()
+        return
+      }
     }
-    setContacts(contacts.concat(contactObject))  // Add contact to the contact list
-    setNewName('')  // Reset name value in the input field
-    setNewPhoneNumber('')  // Reset phone number value in the input field
+
+    // Create a new contact object with the trimmed name, the phone number, and a unique id
+    const contactObject = { name, number}
+
+    // Send the created object to the server
+    contactService
+      .create(contactObject)
+      .then(returnedContact => {
+        setContacts(contacts.concat(returnedContact))
+      })
+
+    resetInputFields()
+  }
+
+  const deleteContact = (contact) => {
+    console.log("delete button is pressed")
+
+    if (window.confirm(`Do you really want to delete ${contact.name} from your contact list?`)){
+      // Delete the contact
+      contactService
+        .deleteContact(contact.id)
+        .then(response => {
+          console.log(response)
+        })
+        .catch(error => {
+          alert(`the contact ${contact.name} was already deleted from the server`)
+        })
+      
+      // Update the contactsList
+      setContacts( contacts.filter(c => c.id !== contact.id))
+    }
   }
 
   // Fetch the initial data from the server
   useEffect(() => {
-    console.log('effect started')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        console.log('data returned:', response.data)
-        setContacts(response.data)
+    // console.log('effect started')
+    contactService
+      .getAll()
+      .then(initialContacts => {
+        setContacts(initialContacts)
       })
   }, [])
-  console.log('render', contacts.length, 'contacts')
+  // console.log('render', contacts.length, 'contacts')
 
   return (
     <div>
@@ -73,7 +121,7 @@ const App = () => {
        desc1={'name'} value1={newName} onChange1={handleNameChange}
        desc2={'phonenumber'} value2={newPhoneNumber} onChange2={handlePhoneNumberChange}
        btnTxt={'add'} onSubmit={addNewContact}/>
-      <Contacts contacts={contacts} filterValue={filter}/>
+      <Contacts contacts={contacts} filterValue={filter} deleteCallback={deleteContact}/>
     </div>
   )
 }
