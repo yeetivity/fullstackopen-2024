@@ -11,7 +11,7 @@ const Contacts = ({ contacts, filterValue }) => {
       <>
         <SubHeader text={'Contacts'} />
         {contactsToShow.map((contact) => (
-          <p key={contact.id}> {contact.name} <br/> {contact.phoneNumber} </p>
+          <p key={contact.id}> {contact.name} <br/> {contact.number} </p>
         ))}
       </>
     )

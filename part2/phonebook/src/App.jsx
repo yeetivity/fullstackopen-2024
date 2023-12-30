@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import Contacts from './components/Contacts'
 import { Header, SubHeader } from './components/Headers'
 import Filter from './components/Filter'
@@ -7,13 +8,7 @@ import DoubleInputForm from './components/DoubleInputForm'
 const App = () => {
   const appName = 'Phonebook'
 
-  const [contacts, setContacts] = useState([
-    { 
-      name: 'Arto Hellas',
-      phoneNumber: '+4672 123 45 67',
-      id: 0
-    }
-  ]) 
+  const [contacts, setContacts] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newPhoneNumber, setNewPhoneNumber] = useState('')
   const [filter, setFilter] = useState('')
@@ -55,6 +50,19 @@ const App = () => {
     setNewName('')  // Reset name value in the input field
     setNewPhoneNumber('')  // Reset phone number value in the input field
   }
+
+  // Fetch the initial data from the server
+  useEffect(() => {
+    console.log('effect started')
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        console.log('promise fulfilled')
+        console.log('data returned:', response.data)
+        setContacts(response.data)
+      })
+  }, [])
+  console.log('render', contacts.length, 'contacts')
 
   return (
     <div>
