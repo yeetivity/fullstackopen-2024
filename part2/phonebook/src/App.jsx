@@ -9,7 +9,7 @@ import contactService from './services/contacts'
 const App = () => {
   const appName = 'Phonebook'
 
-  const [contacts, setContacts] = useState([]) 
+  const [contacts, setContacts] = useState(null) 
   const [newName, setNewName] = useState('')
   const [newPhoneNumber, setNewPhoneNumber] = useState('')
   const [filter, setFilter] = useState('')
