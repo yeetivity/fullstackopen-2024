@@ -1,4 +1,5 @@
 const blogRouter = require('express').Router()
+const jwt = require('jsonwebtoken')
 const Blog = require('../models/blog')
 const User = require('../models/user')
 const logger = require('../utils/logger')
@@ -13,6 +14,15 @@ blogRouter.get('/', async (req, res) => {
 blogRouter.post('/', async (req, res) => {
   const body = req.body
   logger.info('received the following body', body)
+
+  const decodedToken = jwt.verify(getTokenFrom(req), process.env.SECRET)
+  console.log(decodedToken)
+  if (!decodedToken.id) {
+    return res.status(401).json({ error: 'token invalid' })
+  }
+
+  const user = await User.findById(decodedToken.id)
+
   try {
     // Get the id from any user
     const users = await User.find({})
@@ -24,12 +34,12 @@ blogRouter.post('/', async (req, res) => {
       author: body.author,
       url: body.url,
       likes: body.likes,
-      user: firstUser.id
+      user: user._id
     })
 
     const savedBlog = await blog.save()
-    firstUser.blogs = firstUser.blogs.concat(savedBlog._id)
-    await firstUser.save()
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
 
     res.status(201).json(savedBlog)
   } catch (error) {
@@ -58,5 +68,14 @@ blogRouter.put('/:id', async(req, res) => {
   const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, blog, { new: true })
   res.json(updatedBlog)
 })
+
+// Get Token
+const getTokenFrom = req => {
+  const auth = req.get('authorization')
+  if (auth && auth.startsWith('bearer ')) {
+    return auth.replace('bearer ', '')
+  }
+  return null
+}
 
 module.exports = blogRouter

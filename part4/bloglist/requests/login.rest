@@ -1,0 +1,17 @@
+### Correct
+POST http://localhost:3001/api/login
+Content-Type: application/json
+
+{
+  "username": "yeetivity",
+  "password": "123456"
+}
+
+### Wrong
+POST http://localhost:3001/api/login
+Content-Type: application/json
+
+{
+  "username": "yeetivity",
+  "password": "1234567"
+}

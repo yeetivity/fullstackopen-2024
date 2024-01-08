@@ -1,5 +1,6 @@
 POST http://localhost:3001/api/blogs
 Content-Type: application/json
+Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InllZXRpdml0eSIsImlkIjoiNjU5YzQ2Njg5MDBlYjcxODUwNDdkY2ZiIiwiaWF0IjoxNzA0NzQ0NzIzfQ.thbIFzkf3luuwAZIcDt81RRbALyGtpdUZHh1ltwIMmY
 
 {
     "title": "Jane Does blog",
