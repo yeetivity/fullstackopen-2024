@@ -1,4 +1,5 @@
 const blogRouter = require('express').Router()
+const blog = require('../models/blog')
 const Blog = require('../models/blog')
 const logger = require('../utils/logger')
 
@@ -22,6 +23,25 @@ blogRouter.post('/', async (req, res) => {
     }
     return res.status(500).json({ error: 'Internal Sever Error' })
   }
+})
+
+// Delete route
+blogRouter.delete('/:id', async (req, res) => {
+  await Blog.findByIdAndDelete(req.params.id)
+  res.status(204).end()
+})
+
+// Update route
+blogRouter.put('/:id', async(req, res) => {
+  const body = req.body
+  const blog = {
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes
+  }
+  const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, blog, { new: true })
+  res.json(updatedBlog)
 })
 
 module.exports = blogRouter

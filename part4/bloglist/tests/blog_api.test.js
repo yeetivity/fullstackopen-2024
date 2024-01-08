@@ -14,7 +14,7 @@ beforeEach(async () => {  // Write all the initial blogs to the database
   }
 })
 
-describe('Confirm DB initialisation', () => {
+describe('when there is initially some blogs saved', () => {
   test('blogs are returned as json', async() => {
     await api
       .get('/api/blogs')
@@ -36,8 +36,17 @@ describe('Confirm DB initialisation', () => {
   })
 })
 
-describe('Confirm DB operations', () => {
-  test('a valid blog can be added', async () => {
+describe('checking database parameters', () => {
+  test('Confirm unique identifier is named id', async () => {
+    const blogs = await helper.blogsInDb()
+    blogs.forEach(blog => {
+      expect(blog.id).toBeDefined()
+    })
+  })
+})
+
+describe('addition of a new blog', () => {
+  test('succeeds with valid data', async () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog)
@@ -51,7 +60,7 @@ describe('Confirm DB operations', () => {
     expect(titles).toContain(helper.newBlog.title)
   })
 
-  test('a blog with likes missing can be added and likes defaults to zero', async () => {
+  test('succeeds with missing likes, but likes defaults to zero', async () => {
     const result = await api
       .post('/api/blogs')
       .send(helper.newBlog_likesMissing)
@@ -60,14 +69,14 @@ describe('Confirm DB operations', () => {
     expect(result.body.likes).toBe(0)
   })
 
-  test('a blog without a title cannot be added and returns status 400', async () => {
+  test('fails with status code 400 if title invalid', async () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog_titleMissing)
       .expect(400)
   })
 
-  test('a blog without a url cannot be added and returns status 400', async () => {
+  test('fails with status code 400 if url invalid', async () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog_titleMissing)
@@ -75,14 +84,44 @@ describe('Confirm DB operations', () => {
   })
 })
 
-describe('Confirm DB value paramaters', () => {
-  test('Confirm unique identifier is named id', async () => {
-    const blogs = await helper.blogsInDb()
-    blogs.forEach(blog => {
-      expect(blog.id).toBeDefined()
-    })
+describe('deletion of a blog', () => {
+  test('succeeds with status code 204 if id is valid', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToDelete = blogsAtStart[0]
+
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .expect(204)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1)
+
+    const titles = blogsAtEnd.map(b => b.title)
+    expect(titles).not.toContain(blogToDelete.title)
   })
 })
+
+describe('updating of a blog', () => {
+  test('succeeds with status code 200 if id is valid', async() => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToUpdate = blogsAtStart[0]
+
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(helper.updatedBlogData)
+      .expect(200)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    const updatedBlog = blogsAtEnd[0]
+
+    expect(updatedBlog.title).toBe(helper.updatedBlogData.title)
+    expect(updatedBlog.author).toBe(helper.updatedBlogData.author)
+    expect(updatedBlog.url).toBe(helper.updatedBlogData.url)
+    expect(updatedBlog.likes).toBe(helper.updatedBlogData.likes)
+  })
+})
+
+
 
 afterAll(async() => {
   await mongoose.connection.close()

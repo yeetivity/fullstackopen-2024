@@ -74,11 +74,20 @@ const newBlog_urlMissing = {
   author: 'John Doe',
 }
 
+const updatedBlogData = {
+  title: 'Updated Title',
+  author: 'Updated Author',
+  url: 'http://updatedurl.com',
+  likes: 100,
+}
+
 const blogsInDb = async () => {
   const blogs = await Blog.find({})
   return blogs.map(blog => blog.toJSON())
 }
 
 module.exports = {
-  initialBlogs, newBlog, newBlog_likesMissing, newBlog_titleMissing, newBlog_urlMissing, blogsInDb
+  initialBlogs, newBlog, newBlog_likesMissing,
+  newBlog_titleMissing, newBlog_urlMissing, updatedBlogData,
+  blogsInDb
 }
