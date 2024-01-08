@@ -1,22 +1,37 @@
 const blogRouter = require('express').Router()
-const blog = require('../models/blog')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const logger = require('../utils/logger')
 
 // Get route
 blogRouter.get('/', async (req, res) => {
-  const blogs = await Blog.find({})
+  const blogs = await Blog.find({}).populate('user')
   res.json(blogs)
 })
 
 // Create route
 blogRouter.post('/', async (req, res) => {
-  logger.info('received the following body', req.body)
+  const body = req.body
+  logger.info('received the following body', body)
   try {
-    const blog = new Blog(req.body)
-    const result = await blog.save()
+    // Get the id from any user
+    const users = await User.find({})
+    const firstUser = users[0]
+    console.log(firstUser)
 
-    res.status(201).json(result)
+    const blog = new Blog({
+      title: body.title,
+      author: body.author,
+      url: body.url,
+      likes: body.likes,
+      user: firstUser.id
+    })
+
+    const savedBlog = await blog.save()
+    firstUser.blogs = firstUser.blogs.concat(savedBlog._id)
+    await firstUser.save()
+
+    res.status(201).json(savedBlog)
   } catch (error) {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message })

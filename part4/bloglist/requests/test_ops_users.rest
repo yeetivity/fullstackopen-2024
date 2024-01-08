@@ -1,0 +1,11 @@
+POST http://localhost:3001/api/users
+Content-Type: application/json
+
+{
+    "username": "yeetivity",
+    "name": "Jitse van Esch",
+    "password": "123456"
+}
+
+###
+GET http://localhost:3001/api/users
