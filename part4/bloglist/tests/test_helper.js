@@ -53,9 +53,9 @@ const initialBlogs = [
 ]
 
 const newBlog = {
-  title: 'React patterns 2',
-  author: 'Michael Chan',
-  url: 'https://reactpatterns.com/',
+  title: 'Test Blog',
+  author: 'Jane Doe',
+  url: 'https://testblog.com/',
   likes: 7,
 }
 
@@ -63,6 +63,12 @@ const newBlog_likesMissing = {
   title: 'New Blog',
   author: 'John Doe',
   url: 'https://johndoe.com/',
+}
+
+const testUser = {
+  username: 'root',
+  name: 'root',
+  password: 'secret'
 }
 
 const newBlog_titleMissing = {
@@ -95,5 +101,6 @@ const usersInDb = async () => {
 module.exports = {
   initialBlogs, newBlog, newBlog_likesMissing,
   newBlog_titleMissing, newBlog_urlMissing, updatedBlogData,
+  testUser,
   blogsInDb, usersInDb
 }

@@ -9,13 +9,26 @@ const helper = require('./test_helper')
 
 const api = supertest(app)
 
-beforeEach(async () => {  // Write all the initial blogs to the database
+beforeEach(async () => {
+  // Save some initial blogs
   await Blog.deleteMany({})
 
   for (const blog of helper.initialBlogs) {
     const blogObject = new Blog(blog)
     await blogObject.save()
   }
+
+  // Save some initial user
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash(helper.testUser.password, 10)
+  const user = new User({
+    username: helper.testUser.username,
+    name: helper.testUser.name,
+    passwordHash
+  })
+
+  await user.save()
 })
 
 describe('when there is initially some blogs saved', () => {
@@ -50,10 +63,21 @@ describe('checking database parameters', () => {
 })
 
 describe('addition of a new blog', () => {
-  test('succeeds with valid data', async () => {
+  let authToken
+
+  beforeEach(async () => {
+    const response = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'secret' })
+
+    authToken = response.body.token
+  })
+
+  test('addition succeeds with valid data', async () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog)
+      .set({ Authorization: `bearer ${authToken}` })
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
@@ -68,6 +92,8 @@ describe('addition of a new blog', () => {
     const result = await api
       .post('/api/blogs')
       .send(helper.newBlog_likesMissing)
+      .set({ Authorization: `bearer ${authToken}` })
+
 
     expect(result.body.likes).toBeDefined()
     expect(result.body.likes).toBe(0)
@@ -77,6 +103,7 @@ describe('addition of a new blog', () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog_titleMissing)
+      .set({ Authorization: `bearer ${authToken}` })
       .expect(400)
   })
 
@@ -84,25 +111,58 @@ describe('addition of a new blog', () => {
     await api
       .post('/api/blogs')
       .send(helper.newBlog_titleMissing)
+      .set({ Authorization: `bearer ${authToken}` })
       .expect(400)
+  })
+
+  test('addition fails with 401 unauthorized, if token is not provided', async () => {
+    await api
+      .post('/api/blogs')
+      .send(helper.newBlog)
+      .expect(401)
   })
 })
 
 describe('deletion of a blog', () => {
-  test('succeeds with status code 204 if id is valid', async () => {
-    const blogsAtStart = await helper.blogsInDb()
-    const blogToDelete = blogsAtStart[0]
+  let authToken
+  let blogToDeleteId
 
+  beforeEach(async () => {
+    // Get the token
+    const authResponse = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'secret' })
+
+    authToken = authResponse.body.token
+
+    // Create new blog for root user
+    const blogResponse = await api
+      .post('/api/blogs')
+      .set({ Authorization: `bearer ${authToken}` })
+      .send(helper.newBlog)
+
+    blogToDeleteId = blogResponse.body.id
+  })
+
+  test('deletion succeeds with 204 if id and token is valid', async () => {
     await api
-      .delete(`/api/blogs/${blogToDelete.id}`)
+      .delete(`/api/blogs/${blogToDeleteId}`)
+      .set({ Authorization: `bearer ${authToken}` })
       .expect(204)
 
     const blogsAtEnd = await helper.blogsInDb()
-    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1)
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
 
     const titles = blogsAtEnd.map(b => b.title)
-    expect(titles).not.toContain(blogToDelete.title)
+    expect(titles).not.toContain(helper.newBlog.title)
   })
+
+  test('deletion fails with 401 if token is not valid', async () => {
+    await api
+      .delete(`/api/blogs/${blogToDeleteId}`)
+      .expect(401)
+  })
+
 })
 
 describe('updating of a blog', () => {
@@ -126,15 +186,6 @@ describe('updating of a blog', () => {
 })
 
 describe('when there is initially one user in db', () => {
-  beforeEach(async () => {
-    await User.deleteMany({})
-
-    const passwordHash = await bcrypt.hash('sekret', 10)
-    const user = new User({ username: 'root', passwordHash })
-
-    await user.save()
-  })
-
   test('creation succeeds with a fresh username', async () => {
     const usersAtStart = await helper.usersInDb()
 
@@ -219,6 +270,13 @@ describe('when there is initially one user in db', () => {
 
     const usersAtEnd = await helper.usersInDb()
     expect(usersAtEnd).toEqual(usersAtStart)
+  })
+
+  test('login succeeds with 200', async () => {
+    await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'secret' })
+      .expect(200)
   })
 })
 

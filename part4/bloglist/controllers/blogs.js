@@ -1,8 +1,8 @@
 const blogRouter = require('express').Router()
-const jwt = require('jsonwebtoken')
 const Blog = require('../models/blog')
 const User = require('../models/user')
 const logger = require('../utils/logger')
+const middleware = require('../utils/middleware')
 
 // Get route
 blogRouter.get('/', async (req, res) => {
@@ -11,24 +11,13 @@ blogRouter.get('/', async (req, res) => {
 })
 
 // Create route
-blogRouter.post('/', async (req, res) => {
+blogRouter.post('/', middleware.tokenValidator, async (req, res) => {
   const body = req.body
   logger.info('received the following body', body)
 
-  const decodedToken = jwt.verify(getTokenFrom(req), process.env.SECRET)
-  console.log(decodedToken)
-  if (!decodedToken.id) {
-    return res.status(401).json({ error: 'token invalid' })
-  }
-
-  const user = await User.findById(decodedToken.id)
+  const user = await User.findById(req.user.id)
 
   try {
-    // Get the id from any user
-    const users = await User.find({})
-    const firstUser = users[0]
-    console.log(firstUser)
-
     const blog = new Blog({
       title: body.title,
       author: body.author,
@@ -51,7 +40,18 @@ blogRouter.post('/', async (req, res) => {
 })
 
 // Delete route
-blogRouter.delete('/:id', async (req, res) => {
+blogRouter.delete('/:id', middleware.tokenValidator, async (req, res) => {
+  const blog = await Blog.findById(req.params.id)
+
+  if (!blog) {
+    return res.status(404).json({ error: 'blog not found' })
+  }
+
+  // Check if the user making the request is the owner of the blog
+  if (blog.user.toString() !== req.user.id) {
+    return res.status(403).json({ error: 'permission denied' })
+  }
+
   await Blog.findByIdAndDelete(req.params.id)
   res.status(204).end()
 })
@@ -68,14 +68,5 @@ blogRouter.put('/:id', async(req, res) => {
   const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, blog, { new: true })
   res.json(updatedBlog)
 })
-
-// Get Token
-const getTokenFrom = req => {
-  const auth = req.get('authorization')
-  if (auth && auth.startsWith('bearer ')) {
-    return auth.replace('bearer ', '')
-  }
-  return null
-}
 
 module.exports = blogRouter
